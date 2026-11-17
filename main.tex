@@ -1,0 +1,560 @@
+\documentclass{article}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[a4paper,top=2.5cm,bottom=2cm,left=1.7cm,right=1.7cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{enumitem}
+\setlist{itemsep=2pt,parsep=0pt,topsep=3pt}
+\usepackage[most]{tcolorbox}
+
+\newcommand{\edit}[1]{\textcolor{blue}{#1}}
+\newcommand{\response}{\vspace{0.1cm}\noindent\underline{\textbf{Response:}}\ }
+\newcommand{\changes}{\vspace{0.1cm}\noindent\textbf{Changes in the manuscript:}}
+
+\newtcbtheorem[auto counter, number within = section]{cmt}{Comment}{
+	colbacktitle = black!60!white, colframe = black!60!white,
+	colback = black!5!white, fonttitle=\bfseries,
+}{c}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+
+\begin{document}
+
+
+
+
+Dear Editor, dear Reviewers,
+
+We thank the editor for handling our manuscript and the five reviewers for their careful reading and constructive comments. The comments were detailed and to the point, and addressing them improved the paper substantially. Below we reproduce every comment and give our response together with the changes in the manuscript. All section, table and appendix numbers refer to the revised manuscript, and the changes are marked in blue.
+
+While addressing the comments, we re-examined the formulation, the code and every reported number. We found and corrected several errors in the implementation and in the description of the models, including the description of the RUL uncertainty, and all results were recomputed. The checks requested by the reviewers also changed the method itself. On the plans that the optimiser selected (Reviewer 3), the neural network surrogate did not underestimate the cost, but its predictions were compressed towards the mean. Compared with a tuned RUL buffer (Reviewer 2), it did not reliably reach a lower cost, also after the corrections. A generic network that responded more strongly to the plan was exploited by the optimiser, which selected plans whose cost the network underestimated. We therefore built an engineered recourse term from the rules of the evaluation as a reference. The proposed learned recourse model keeps the structure of this term, a cost per component and RUL outcome, but learns all its parameters from simulated recovery outcomes. It is convex in the plan and is embedded in the MILP as a linear program without additional binary variables.
+
+The main changes are the following.
+
+\begin{itemize}
+\item \textbf{Learned recourse model.} The neural network surrogate is replaced by a recourse model that is learned from simulated recovery outcomes, is monotone and convex in the plan and is embedded exactly as a linear program (Sections 4.1, 4.3 and 4.4).
+\item \textbf{Fair comparison.} The comparison is built as a ladder from deterministic planning on the expected RUL (D-EX) over a tuned RUL buffer (D-EX-BUF) to the learned model (S-EX-LRN). An engineered recourse term built with knowledge of the evaluation rules (S-EX-ENG) and a neural variant (S-EX-NN) serve as references (Section 5.5, Table 5).
+\item \textbf{Linked sequential planning.} A second sequential model links the two stages through a relaxed maintenance model in the tail-assignment stage, which separates the value of the stage link from that of joint planning (Sections 5.5.1 and 7.2).
+\item \textbf{Recomputed results.} All models were evaluated on the 500 case-study instances with 500 common scenarios per instance. The statistical analysis was redone with paired two-sided Wilcoxon tests, effect sizes and a Holm correction (Section 6.2, Appendix 8.10).
+\item \textbf{Uncertainty model and robustness.} The RUL error now has a standard deviation that grows with the predicted RUL. The final plans were re-evaluated under six other uncertainty structures and re-priced with other cost weights (Appendices 8.7 and 8.12).
+\item \textbf{Scalability of the stochastic models.} A new study solves the stochastic models up to 15 aircraft and 10 days and evaluates the plans at five sizes (Section 6.3, Appendix 8.13).
+\item \textbf{Framing and limitations.} The Introduction now states the methodological contributions, defines CBM and PdM and reviews the modelling of RUL uncertainty. Claims were moderated throughout, and Section 7.6 states the idealised assumptions.
+\end{itemize}
+
+For reference, the models of the revised manuscript are listed below together with their counterparts in the submitted version.
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.3cm}XX@{}}
+\toprule
+\textbf{Model} & \textbf{Description} & \textbf{Submitted version} \\
+\midrule
+D-EX / D-2SP & Joint / sequential MILP on the expected RUL & D-EX / D-2SP \\
+D-EX-BUF / D-2SP-BUF & As D-EX / D-2SP with a buffer of $z$ standard deviations on the RUL, $z$ tuned on the validation instances & D-EX-95 / D-2SP-95 are the special case $z = 1.645$ \\
+S-EX-ENG & Joint MILP with an engineered recourse term built from the evaluation rules & new reference \\
+S-EX-LRN & Joint MILP with the learned recourse model (proposed) & replaces S-EX and S-EX-95 \\
+S-EX-NN & Joint MILP with a partially input-convex neural network & new variant \\
+S-2SP-LRN-S2 & Sequential, learned model in the maintenance stage only & replaces S-2SP and S-2SP-95 \\
+S-2SP-LRN-S12 & Sequential, learned model also in the tail-assignment stage & new \\
+Real-Deadline & Airline plan with prognostic tasks added by an RUL deadline rule & Real \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\vspace{0.2cm}
+Yours sincerely,\\
+Benno Käslin, Marta Ribeiro, Dimitrios Zarouchas, Manuel Arias Chao
+
+
+
+\newpage
+\section{Response to Reviewer 1}
+
+We thank Reviewer 1 for the thorough review. The comments led us to check every number in the paper, to add a scalability study of the stochastic models and to state the contribution more clearly.
+
+\begin{cmt}{}{}
+The manuscript does not define its novelty sufficiently clearly. Existing studies have already addressed predictive maintenance, fleet operations, and RUL uncertainty. The authors should more precisely articulate the methodological advance over prior work rather than relying mainly on the claim of being the first to jointly consider TA, MS, and PdM.
+\end{cmt}
+
+\response We thank the reviewer for this comment and agree. We rewrote the end of the Introduction and the contribution list (Section 1), which now state the methodological advance and no longer rely on being the first to consider TA, MS and PdM jointly. A deterministic joint formulation with prognostic tasks exists in a master thesis, which we now cite as the base of this work. The contributions are now stated as follows. First, a joint MILP in which the RUL of several components per aircraft is consumed by the assigned flights, restored by prognostic tasks in capacity-limited slots and treated as uncertain. Second, a recourse model that is learned from simulated recovery outcomes, is convex in the plan and is embedded exactly as a linear program without additional binary variables. Third, a link between the two stages of sequential planning through a relaxed maintenance model in the tail-assignment stage. Section 3.4 and Table 1 position these contributions against prior work, including recent studies that integrate prognostics into tail assignment and maintenance routing.
+
+\changes
+\begin{itemize}[nosep]
+\item Rewrote the end of the Introduction and the contribution list as method contributions (Section 1).
+\item Cited the deterministic joint formulation of the master thesis as the base of this work (Section 1).
+\item Reworked the research gaps and the comparison table (Section 3.4, Table 1), including recent work on prognostics in tail assignment and maintenance routing.
+\end{itemize}
+
+\begin{cmt}{}{}
+The main technical components adopted in the manuscript, including integrated MILP modeling, stochastic programming, and ReLU-based approximation of second-stage costs, all have established foundations in the literature. The present contribution appears largely to be an integration of existing methods in a specific airline decision context. The authors should demonstrate more convincingly whether this integration constitutes a genuine methodological contribution rather than a combination of known modeling components.
+\end{cmt}
+
+\response We agree that the components of the submitted model were known. In the revised manuscript, the recourse model itself is the main methodological contribution (Sections 4.1 and 4.3), and its structure follows from the problem. A convex, monotone max-affine cost is applied to every component under each value of its RUL error, and the costs of the components of an aircraft are combined by a learned ordered weighted average. The same function applies to every component and aircraft, so the model handles any number of aircraft. Since it is convex in the plan, it is embedded exactly as a linear program and adds no binary variables, whereas a ReLU network as in Neur2SP needs one binary variable per hidden unit. All parameters are learned from simulated recovery outcomes, so the model contains no rules or cost rates of the recovery policy. A term built by hand from these rules and rates, with one hinge on the worst day per component and outcome and a plain sum over the components, is a special case of this structure. We use it as a reference (S-EX-ENG), so that the comparison shows what learning the parameters adds.
+
+The comparison in Section 6.2 shows what this contributes. The learned model reaches the quality of an engineered term that was built with knowledge of the evaluation rules, with a 0.64\% lower total cost, which we describe as a small difference. It costs 4.13\% less than a tuned RUL buffer. Sections 3.3 and 3.4 position the model against learned recourse models in the literature. The link of the two planning stages (Section 5.5.1) is a second methodological element (see our response to Comment 2.6).
+
+\changes
+\begin{itemize}[nosep]
+\item New Section 4.1 on why a learned recourse model is used, and new Section 4.3 on its structure and its exact embedding as a linear program.
+\item Positioning against Neur2SP and input-convex networks in Section 3.3 and Gap 2 (Section 3.4).
+\item Comparison ladder with a tuned buffer and an engineered term as references (Section 5.5, Table 5).
+\end{itemize}
+
+\begin{cmt}{}{}
+The PdM.1 constraint in Section 4 appears to have a temporal consistency issue. The current RUL recovery term does not explicitly require the corresponding maintenance action to be completed before the relevant time point, which may result in non-causal RUL recovery. As this is a core safety-related constraint, both the mathematical formulation and the actual implementation should be carefully re-examined.
+\end{cmt}
+
+\response We thank the reviewer for spotting this. We re-examined both the formulation and the implementation. The implementation was already causal. For each time point $t$, it counts only the flights of aircraft $p$ that are completed before $t$, and only the prognostic tasks of aircraft $p$ scheduled in slots that start no later than $t$. The written formula did not reflect this, as the recovery term summed over all slots and was not restricted to the tasks of aircraft $p$. We corrected PdM.1 in Section 4.2.3 to match the implementation:
+
+\[
+\mathrm{RUL}_{e,p,0} - \sum_{f:\ \mathrm{onblock}(f) < t} c_{e,f}\, F_{p,f} + \sum_{g \in \mathcal{G}_{\text{prog}}(e,p)} \mathrm{RUL\_recover}_g \sum_{s:\ \mathrm{start}_s \le t} T_{g,s} \ \ge\ 0 \qquad \forall e,p,t
+\]
+
+where $\mathcal{G}_{\text{prog}}(e,p)$ is the set of prognostic tasks of aircraft $p$ that restore component $e$. Recovery is credited from the slot start. This is consistent, as the aircraft stays on ground for the whole slot (MS.6), so no flight can consume RUL in between. Since the code was already correct, the correction does not change any result.
+
+\changes
+\begin{itemize}[nosep]
+\item Corrected PdM.1 and added the explanation of the slot-start crediting (Section 4.2.3).
+\end{itemize}
+
+\begin{cmt}{}{}
+The RUL uncertainty setting in Section 5 lacks sufficient justification. The component-health information is synthetically generated from predefined distributions rather than obtained from an actual prognostic model. Therefore, the claim of "real-world validation" should be moderated. The manuscript should clearly distinguish between real operational data and synthetic RUL uncertainty and provide stronger justification for the assumed distributions.
+\end{cmt}
+
+\response We agree and have moderated the claim. The manuscript now states throughout that the framework is evaluated on real flight and maintenance data combined with synthetic RUL scenarios (Abstract, Sections 1, 5.1 and 8). We also revised the uncertainty model and its justification (Section 5.3). The RUL error is Gaussian with a standard deviation that grows with the predicted RUL, $\sigma = 1 + 0.124\,\mu$ flight cycles. This follows the prognostic accuracy cone and the RUL-proportional safety margin used in alarm-based maintenance planning. A Gaussian with an input-dependent variance is also the standard output of deep-learning RUL models with a heteroscedastic likelihood. The same model is used for planning, for the training data and for the evaluation.
+
+Since the assumed distribution remains a modelling choice, the final plans were re-evaluated under six other uncertainty structures (Appendix 8.7, see also our response to Comment 2.1). The learned and the engineered model remain cheaper than both deterministic models in every case, and the learned model costs 3.7 to 5.5\% less than the tuned buffer.
+
+\changes
+\begin{itemize}[nosep]
+\item "Real-world validation" replaced by "real flight and maintenance data combined with synthetic RUL scenarios" (Abstract, Sections 1, 5.1 and 8).
+\item New heteroscedastic uncertainty model and its justification (Section 5.3).
+\item New robustness analysis under six uncertainty structures (Section 7.4, Appendix 8.7).
+\end{itemize}
+
+\begin{cmt}{}{}
+The consistency and scalability analysis in Section 6 need further improvement. Some numerical statements are not fully consistent with the tabulated results, and the scalability study is conducted only for deterministic formulations while the conclusions are extended to the stochastic NN-based models. The reported results should be thoroughly checked, and direct scalability evidence should be provided for the stochastic formulations.
+\end{cmt}
+
+\response We thank the reviewer and agree on both points.
+
+(a) The reviewer is right that several statements in the submitted version did not match the tables. All results were recomputed from the final runs, and every number in the text was checked against the tables with a script. Every percentage in the text is now relative to the model it is compared with and is taken from the paired tests (Appendices 8.10 and 8.11).
+
+(b) We added direct scalability evidence for the stochastic models (Section 6.3, Appendix 8.13). D-EX, S-EX-LRN, D-2SP and S-2SP-LRN-S12 were solved on 50 instances per size at 5 to 15 aircraft and at 3 to 10 days. The learned term adds no binary variables, but it makes the joint model harder to solve. S-EX-LRN reaches the 1\% gap on all instances at the base size and on 86\% at 7 aircraft, and from 10 aircraft or 5 days onwards the median instance stops at the time limit. The linked sequential model S-2SP-LRN-S12 reaches the gap on all instances up to 10 aircraft and up to 7 days. Since solve times alone do not show plan quality, the plans were also evaluated at five sizes (Section 6.3.2). S-EX-LRN has the lowest total cost at every evaluated size, although its lead over the tuned buffer shrinks from 3.8\% at 3 days to 0.5\% at 10 days. The deterministic scalability study was rerun with the current code (Appendix 8.14). The conclusions in Section 7.3 now rest on these results and are limited to the evaluated sizes.
+
+\changes
+\begin{itemize}[nosep]
+\item All numbers in Sections 6 to 8 and the appendices recomputed and checked against the tables.
+\item New stochastic scalability study (Section 6.3.1, Table 6, Appendix 8.13) and evaluated plans at larger sizes (Section 6.3.2, Table 7).
+\item Deterministic scalability study rerun with the current code (Appendix 8.14).
+\item Deployment guidance rewritten and limited to the evaluated sizes (Section 7.3).
+\end{itemize}
+
+\begin{cmt}{}{}
+The claims made in Section 7, the conclusions, and the appendix are stronger than warranted by the current evidence. The evaluation model uses a simplified recovery policy, and the Wilcoxon signed-rank analysis contains inconsistencies in the reported sample size and test statistics. Claims regarding industrial benefits, statistical significance, and deployment readiness should therefore be moderated, and the statistical analysis should be rechecked.
+\end{cmt}
+
+\response We agree and have redone the statistical analysis (see also our response to Comment 3.3). Each comparison now uses the 500 matched instances with shared evaluation scenarios, the total cost and a two-sided Wilcoxon signed-rank test with bootstrap confidence intervals. All differences are significant at $p < 0.001$, also after a Holm correction, with one exception between the two references, S-EX-NN and S-EX-ENG, which tie (difference 0.05\%, $p = 0.95$). With 500 pairs small differences reach significance, so we report the size of every difference with its test. For example, the learned model costs 0.64\% less than the engineered term, which we describe as significant but small.
+
+We also moderated the claims. The comparison with the real-world baseline is presented as a reference for the value of uncertainty-aware planning rather than as an estimate of the airline's performance (Sections 7.1 and 7.6). The simplified recovery policy is discussed as a limitation that may overstate the value of stochastic planning (Section 7.6). The deployment guidance is restricted to the sizes at which plans were evaluated (Section 7.3.2).
+
+\changes
+\begin{itemize}[nosep]
+\item Statistical analysis redone (Section 6.2.2, Appendix 8.10).
+\item Claims on industrial benefit, significance and deployment readiness moderated in Sections 6 to 8 and the appendix.
+\item Simplified recovery policy and real-world baseline discussed as limitations (Section 7.6).
+\end{itemize}
+
+
+
+\newpage
+\section{Response to Reviewer 2}
+
+We thank Reviewer 2 for the constructive comments. They led in particular to the revised uncertainty model, the ablation of the learned component and a more balanced reading of the joint and sequential models.
+
+\begin{cmt}{}{}
+The proposed framework assumes that RUL predictions follow independent Gaussian distributions with a fixed standard deviation. However, practical prognostic models usually produce uncertainty distributions that are asymmetric, heteroscedastic, and potentially correlated among components. Since the proposed optimisation decisions are directly driven by these uncertainty distributions, the validity of the stochastic optimisation results strongly depends on the realism of the assumed uncertainty model.
+\end{cmt}
+
+\response We agree that the validity of the results depends on the assumed uncertainty model. While revising this part, we also found that the description of the submitted version did not match its implementation. The text described Gaussian errors with a fixed standard deviation, whereas the implementation drew the errors uniformly from the integers between \textminus{}5 and 5 flight cycles. We corrected this, and the text and the code now use the same uncertainty model in planning, training and evaluation. We made two further changes. First, the fixed spread was replaced by a Gaussian error whose standard deviation grows with the predicted RUL (Section 5.3), so the uncertainty is heteroscedastic. Second, we tested how robust the plans are to other uncertainty structures (Appendix 8.7, discussed in Section 7.4). The final plans, made under the Gaussian assumption, were re-evaluated under heavy-tailed errors (Student t with four degrees of freedom), errors correlated between the components of an aircraft, errors skewed to early failure, a less accurate predictor, a predictor that overestimates the RUL and the uniform errors of the submitted implementation.
+
+The learned and the engineered model remain cheaper than both deterministic models in every case. Their order depends on the case. The engineered term is cheaper when failures occur more often than planned, and the learned model is cheaper under skewed, heavy-tailed and correlated errors. Since the framework only requires a set of scenarios, an asymmetric or correlated distribution from a real prognostic model can replace the sampler. The remaining limitation is stated in Section 7.6.
+
+\changes
+\begin{itemize}[nosep]
+\item Description of the uncertainty model corrected and aligned with the implementation, now a heteroscedastic Gaussian (Section 5.3).
+\item Robustness of the final plans under six uncertainty structures (Section 7.4, Appendix 8.8, Table 14).
+\item Limitation "Synthetic RUL uncertainty" revised (Section 7.6).
+\end{itemize}
+
+\begin{cmt}{}{}
+The connection between the assumed RUL uncertainty model and the actual airline health monitoring data is unclear.
+\end{cmt}
+
+\response We thank the reviewer for this question. The study does not use a prognostic model of the airline. The point predictions and their uncertainty are synthetic, and only the flight and maintenance data are real. We now state this in Sections 5.1 and 5.3. The framework needs, for every monitored component, a point prediction of the RUL in flight cycles and a predictive distribution of its error. A real prognostic model enters through the scenario sampler, which draws the RUL scenarios for planning, training and evaluation from these distributions (Section 5.3). As future work, prognostic models trained on the health monitoring data of the SWISS fleet will provide these predictions and their error distributions (Section 7.7).
+
+\changes
+\begin{itemize}[nosep]
+\item Stated that the RUL predictions and their uncertainty are synthetic and that no health monitoring data were used (Sections 5.1 and 5.3).
+\item Described how a real prognostic model enters through the scenario sampler (Section 5.3).
+\item Prognostic models trained on the health monitoring data of the SWISS fleet named as future work (Section 7.7).
+\end{itemize}
+
+\begin{cmt}{}{}
+The neural network surrogate is trained from deterministic optimisation solutions, which may limit its ability to represent the optimisation landscape explored during stochastic optimisation.
+\end{cmt}
+
+\response We agree that plans from the deterministic model alone do not cover the plans that the stochastic model explores. The training plans of the new learned recourse model are therefore generated with random RUL buffers (Sections 4.4 and 5.5.3). For every instance a buffer level is drawn, every component receives its own buffer up to that level, and each instance is solved three times with independent draws while the solution pools are kept. The training data thus range from unprotected plans to plans with buffers beyond the 95\% lower confidence bound of the RUL.
+
+We also checked the model on the plans that the MILP finally chose (Appendix 8.3, see also our response to Comment 3.2). There it over-predicts the simulated recourse cost by 7.3\% on average, with a rank correlation of 0.956 over the instances. Its error on its own plans is the same as on the plans of the other models. The shift from the training plans to the chosen plans therefore does not turn into under-prediction. The model is also convex and monotone in the plan by construction, which is intended to reduce the exploitation of model errors by the optimiser (Section 4.1).
+
+\changes
+\begin{itemize}[nosep]
+\item Training plans generated with random, uncertainty-scaled RUL buffers (Sections 4.4 and 5.5.3).
+\item Prediction error on the final plans and cross-prediction check (Appendix 8.3, Tables 8 and 9).
+\item Convex and monotone structure against exploitation (Section 4.1).
+\end{itemize}
+
+\begin{cmt}{}{}
+The evaluation-stage heuristic may introduce bias into the reported benefits of the proposed method.
+\end{cmt}
+
+\response We thank the reviewer for this important point. The evaluation heuristic permits only flight cancellations and reactive maintenance and no aircraft swaps, so it likely overstates the cost of an RUL violation. This bias favours plans with fewer violations, and it affects the comparison with the real-world baseline most strongly. We removed the statement that the heuristic does not alter the ranking and discuss the direction of the bias in Section 7.6.
+
+We also revised the real-world baseline. It is now evaluated on all 500 instances with the same scenarios and the same evaluation as all other models. The airline's plans contain no prognostic tasks, so these are added by a transparent rule (Real-Deadline). Every component whose expected RUL runs out within the horizon receives its task in the last real maintenance slot before that day, and no additional slot is opened. The learned model costs 27.52\% less than Real-Deadline. The tuned buffer already reaches 24.39\% and deterministic joint planning 7.48\% (Section 7.1, Appendix 8.11), so most of the gain comes from handling the RUL uncertainty at all. We state that the baseline is a reference for the value of uncertainty-aware planning rather than an estimate of the airline's actual performance.
+
+\changes
+\begin{itemize}[nosep]
+\item Statement that the heuristic does not alter the ranking removed, direction of the bias discussed (Section 7.6).
+\item Real-world baseline evaluated on all 500 instances with the same scenarios, a second variant in Appendix 8.11.
+\item Gains over the real-world baseline presented as a reference only (Sections 7.1 and 7.6).
+\end{itemize}
+
+\begin{cmt}{}{}
+The claimed industrial applicability is not fully supported by the current experimental scale. Although the manuscript uses data from a real airline, the main experiments are conducted on instances involving five aircraft over a three-day horizon, while the actual fleet contains 30 aircraft and real airline networks can involve substantially larger scales. The scalability analysis demonstrates computational trends but does not directly validate the proposed approach in a realistic fleet-level deployment scenario.
+\end{cmt}
+
+\response We agree and have narrowed the claims. The main comparison remains at 5 aircraft and 3 days. We added a scalability study of the stochastic models up to 15 aircraft and 10 days, and evaluated the plans at 10 aircraft and at up to 10 days (Section 6.3). The deployment guidance in Section 7.3.2 now covers only these sizes. The joint model with the learned recourse term is proposed for sub-fleets of up to 10 aircraft over 3 days or 5 aircraft over up to 7 days, and the linked sequential model where run time matters more. For the full fleet of 30 aircraft neither formulation is applicable directly, and we name fleet decomposition as the route to this scale (Section 7.3.3). Section 7.6 states that the benefit beyond the evaluated sizes is not established.
+
+\changes
+\begin{itemize}[nosep]
+\item Stochastic scalability study and evaluated plans at larger sizes (Section 6.3, Appendix 8.13).
+\item Deployment guidance limited to the evaluated sizes (Section 7.3.2), fleet decomposition as the route to the full fleet (Section 7.3.3).
+\item Limitation "Experimental scale" (Section 7.6).
+\end{itemize}
+
+\begin{cmt}{}{}
+The comparison between the proposed joint optimisation and sequential approaches requires a more balanced interpretation.
+\end{cmt}
+
+\response We agree and now interpret the comparison in two steps (Section 7.2). We added a second sequential model. S-2SP-LRN-S2 uses the learned recourse model in the maintenance stage only, as in the submitted version. S-2SP-LRN-S12 adds a relaxed model of the prognostic maintenance and the learned term to the tail-assignment stage, so that the routing anticipates the maintenance (Section 5.5.1). This stage link lowers the total cost by 8.30\%. The remaining advantage of joint planning is 7.12\%, as S-2SP-LRN-S12 is this much costlier than the joint model.
+
+Neither formulation is better in every respect. The sequential model reaches the optimality gap on all instances with a mean run time of 62 s compared to 149 s, and it scales to larger instances (Section 6.3). The joint model keeps the lower cost at every evaluated size. The limitations of the relaxed first stage and the missing feedback from maintenance to tail assignment are stated in Section 7.6.
+
+\changes
+\begin{itemize}[nosep]
+\item Second sequential model with a link between the stages (Section 5.5.1).
+\item Comparison of joint and sequential planning read in two steps (Section 7.2).
+\item Limitations of the relaxed first stage (Section 7.6).
+\end{itemize}
+
+\begin{cmt}{}{}
+The role of the neural network component requires further ablation analysis.
+\end{cmt}
+
+\response We agree, and this comment changed the method. As a first ablation, we compared the submitted neural network surrogate with a deterministic model that protects every component by a tuned RUL buffer, a single parameter chosen on the validation instances. The buffer reached a lower total cost than the surrogate, also after the corrections described in the opening letter. The check on the final plans requested by Reviewer 3 (Comment 3.2) showed that the predictions of the surrogate were compressed towards the mean, which is consistent with its small effect on the plans. We therefore replaced it with the learned recourse model of Sections 4.1 and 4.3 and kept the tuned buffer as a reference in the comparison.
+
+The comparison is now built as a ladder that isolates the contribution of each component (Section 5.5, Table 5). D-EX plans on the expected RUL without protection. D-EX-BUF adds a tuned RUL buffer with one parameter, and S-EX-LRN replaces the buffer by the learned recourse model. Two references complete the ladder, an engineered recourse term built with knowledge of the evaluation rules (S-EX-ENG) and a neural variant of the learned model (S-EX-NN). The buffer lowers the total cost by 18.28\% compared to D-EX, and the learned model lowers it by a further 4.13\%. The learned model costs 0.64\% less than the engineered term, a small difference, and 0.68\% less than the neural variant, which ties with the engineered term (Section 6.2). The engineered term is a special case of the structure of the learned model with parameters derived from the evaluation rules, so the step from S-EX-ENG to S-EX-LRN shows the effect of learning these parameters. Appendix 8.2 compares the model types inside the MILP (see our response to Comment 5.6), and the learning curve in Appendix 8.5 shows how the quality of the learned model depends on the amount of training data.
+
+\changes
+\begin{itemize}[nosep]
+\item Comparison ladder D-EX, D-EX-BUF, S-EX-LRN with S-EX-ENG and S-EX-NN as references (Section 5.5, Table 5, Appendix 8.8).
+\item Model types inside the MILP (Appendix 8.2).
+\item Learning curve on a fixed evaluation set (Appendix 8.5).
+\end{itemize}
+
+\begin{cmt}{}{}
+Some interpretations of the experimental results appear stronger than what is directly supported by the evidence. The manuscript frequently describes the proposed approach as providing operationally superior or practically deployable solutions. However, several assumptions remain idealised, including deterministic flight schedules, simplified recovery processes, and synthetic RUL uncertainty.
+\end{cmt}
+
+\response We agree and revised the interpretation of the results in Sections 6 to 8. Statements that the approach is operationally superior or practically deployable were removed. The gains are reported with their size and test, and small differences are named as such. Section 7.6 now states the idealised assumptions explicitly, namely the deterministic flight schedules, the simplified recovery policy, the synthetic RUL uncertainty, the approximate cost weights, the real-world baseline and the experimental scale.
+
+\changes
+\begin{itemize}[nosep]
+\item Wording on superiority and deployability removed or moderated (Sections 6 to 8).
+\item Idealised assumptions stated as limitations (Section 7.6).
+\end{itemize}
+
+
+
+\newpage
+\section{Response to Reviewer 3}
+
+We thank Reviewer 3 for the very careful review. The comments on the surrogate, the percentiles and the statistical test pointed to real weaknesses of the submitted version, and following them changed the method for the better.
+
+\begin{cmt}{}{}
+The treatment of the 95th-percentile risk measures requires further clarification and validation. For D-EX-95 and D-2SP-95, a smaller RUL generally corresponds to earlier failure and higher operational risk, so the use of the upper 95th-percentile RUL as a conservative indicator appears counterintuitive and should be carefully verified. This should also be clearly distinguished from the 95th percentile of evaluation cost used in S-EX-95. In addition, since only 100 RUL scenarios are used per instance, please examine whether the estimated 95th-percentile evaluation cost is sufficiently stable, for example through a scenario-number sensitivity or convergence analysis.
+\end{cmt}
+
+\response We thank the reviewer for this observation and answer the three parts in turn.
+
+(1) The reviewer is right that a conservative RUL is a lower bound. The implementation used the one-sided 95\% lower confidence bound, and the text wrongly described it as the upper bound.
+
+(2) The two percentile-based models are no longer part of the comparison. Planning on a lower RUL quantile is now a special case of the tuned buffer D-x-BUF, which reduces the RUL by $z$ standard deviations, with $z$ chosen on the validation instances (Section 4.4). The 95\% lower bound ($z = 1.645$) costs 3.8\% more than the tuned value on these instances. The model that optimised the 95th percentile of the evaluation cost is replaced by the learned recourse model, which estimates the expected recourse cost. No model optimises a cost percentile any more, so a percentile only appears as an RUL quantile in the buffer.
+
+(3) The evaluation now uses 500 scenarios per instance, common to all models. With 100 instead of 500 scenarios, the mean total cost of every model changes by at most 0.06\%, and all tests keep their result (Appendix 8.9).
+
+\changes
+\begin{itemize}[nosep]
+\item Conservative RUL defined as the lower bound, D-x-95 replaced by the tuned buffer D-x-BUF with $z = 1.645$ as a special case (Section 4.4).
+\item Cost-percentile models replaced by the learned recourse model (Sections 4.3 and 5.5).
+\item Evaluation on 500 common scenarios per instance and comparison with 100 scenarios (Section 6.4, Appendix 8.9).
+\end{itemize}
+
+\begin{cmt}{}{}
+The neural network surrogate is trained using solutions generated from deterministic optimisation, while the trained network is subsequently embedded into the optimisation model and directly influences the search for new solutions. This may introduce a distribution shift between the training solutions and the solutions generated by S-EX. The authors are suggested to evaluate the prediction error of the NN specifically on the final optimisation-generated solutions, rather than only reporting prediction accuracy on an independent test set. It would also be useful to discuss whether the optimiser may exploit inaccurate regions of the surrogate model.
+\end{cmt}
+
+\response We agree and followed the suggestion, which proved to be important for the revision. Applied to the submitted surrogate, the check showed no systematic underestimation on the final plans. However, its predictions were compressed towards the mean, with a calibration slope of about 0.6 on the test split, so the surrogate separated the plans only weakly. Together with the comparison with a tuned RUL buffer (Comment 2.7), on which it did not reliably improve, this led us to replace it with the learned recourse model of Sections 4.1 and 4.3. A generic ReLU network that responded more strongly to the plan was exploited by the optimiser (Appendix 8.2), so the new models are convex and monotone in the plan. For the revised models we ran three checks.
+
+First, Appendix 8.3 compares, for the plan each model chose, the predicted recourse cost with the simulated cost on the evaluation scenarios. S-EX-LRN over-predicts on average by 7.3\%, with a rank correlation of 0.956 over the instances. On the test split the over-prediction is about 1\%, so the shift to the chosen plans raises it rather than turning it into under-prediction. Individual plans are still under-predicted, on 26\% of the instances.
+
+Second, to test exploitation directly, every model predicted the recourse cost of the plans chosen by all other models on the same instances (Appendix 8.3, Table 9). An optimiser that exploits model errors selects plans on which its model is more optimistic than on other plans. For S-EX-LRN, the relative error on its own plans equals that on the plans of the other models (median difference 0.0 percentage points, $p = 0.61$). It over-predicts the other plans by 3 to 12\% and its own by 7.3\%. The neural variant S-EX-NN does not pass this check. It over-predicts the plans of the other models by 1 to 6\%, whereas it under-predicts its own plans by 11.7\%, so the optimiser exploits its errors. Its total cost is nevertheless the same as that of the engineered term. A seed ensemble showed the same bias, and one round of retraining on plans of the planner gave the same total cost and a bias of \textminus{}11.6\%. We report this result in Section 6.4, Appendix 8.3 and Section 7.6. Convexity in the plan alone therefore does not prevent exploitation, and in this check the simpler max-affine structure of S-EX-LRN was the more robust one.
+
+Third, the 22 S-EX-LRN instances that stopped at the time limit of 600 s were solved again with 1{'}800 s. Their mean total cost changed by \textminus{}0.07\% ($p = 0.91$), so the time limit does not measurably affect the cost. Of the 9 instances whose objective improved, 6 have a higher simulated cost, which is too few for a conclusion on exploitation. The convex and monotone structure of the model is intended to reduce exploitation, as discussed in Section 4.1. The limits of these checks are stated in Section 7.6.
+
+\changes
+\begin{itemize}[nosep]
+\item Surrogate replaced by the learned recourse model (Sections 4.1, 4.3 and 4.4).
+\item Prediction error on the final plans and cross-prediction check (Appendix 8.3, Section 6.4).
+\item Longer solves of the time-limited instances (Appendix 8.9).
+\item Exploitation discussed as a limitation (Section 7.6).
+\end{itemize}
+
+\begin{cmt}{}{}
+The statistical testing in Appendix 8.8 should be carefully checked. The Wilcoxon signed-rank test is performed on 500 paired evaluation instances, but the manuscript defines (N=1000) by combining 500 observations from each configuration. For a paired test, the effective sample size should normally correspond to the number of paired differences. Please verify the calculation of the Wilcoxon statistic, p-values, and rank-biserial correlation, and ensure that the direction of the one-sided hypothesis is consistently described.
+\end{cmt}
+
+\response We thank the reviewer for this careful check. All points were correct, and we have redone the analysis (Appendix 8.10).
+
+(1) The test had been run on the two configurations pooled ($N = 1'000$), which explains the reported statistic and the wrong $N$ in the rank-biserial formula. It now uses $N = 500$ matched differences per comparison, and results of different models are never pooled.
+(2) The test had been computed on the evaluation cost only. It now uses the total cost, so that the mean differences match the main results table.
+(3) The direction was described inconsistently. We now use a two-sided test and report the sign of every difference.
+(4) We also report the number of zero differences, bootstrap confidence intervals and the share of instances on which the first model is costlier.
+
+All differences are significant at $p < 0.001$, also after a Holm correction over the 27 tests, except between the two references, S-EX-NN and S-EX-ENG (difference 0.05\%, $p = 0.95$).
+
+\changes
+\begin{itemize}[nosep]
+\item Wilcoxon analysis redone with $N = 500$ paired differences, total cost, two-sided tests, rank-biserial correlation, bootstrap confidence intervals and a Holm correction (Section 6.2.2, Appendix 8.10, Tables 17 and 19).
+\end{itemize}
+
+\begin{cmt}{}{}
+The scalability analysis is mainly conducted using the deterministic D-EX and D-2SP models, while the stochastic S-EX and S-2SP variants are excluded because NN retraining would be required. However, the manuscript subsequently gives deployment recommendations for S-EX-95 and S-2SP-95 at different fleet sizes and planning horizons. Please provide additional scalability experiments for the stochastic models or moderate the corresponding conclusions, because the embedded ReLU network introduces additional binary variables and constraints that may significantly affect MILP complexity.
+\end{cmt}
+
+\response We agree and provide the requested experiments (Section 6.3, Appendix 8.13, see also our response to Comment 1.5). The stochastic models were solved at 5 to 15 aircraft and at 3 to 10 days with the model trained at the base size, without retraining. The new learned recourse model is convex in the plan and embedded as a linear program, so it adds no binary variables. The joint model with the learned term has exactly the binaries of the deterministic model at every size. The term nevertheless makes the model harder to solve. The joint model reaches the 1\% gap on all instances at the base size and on 86\% at 7 aircraft, while the linked sequential model reaches it up to 10 aircraft and up to 7 days. The plans were also evaluated at five sizes, and the joint model has the lowest total cost at every evaluated size, even when it stops at the time limit.
+
+Two choices of this study are stated openly. At horizons above 3 days, the first stage of the sequential model allows each prognostic task up to $\lceil D/3 \rceil$ times. This limit was not tuned and leaves the base-size results unchanged. The buffers of the deterministic references were tuned at the base size and not retuned. The deployment recommendations in Section 7.3 were rewritten on the basis of these results.
+
+\changes
+\begin{itemize}[nosep]
+\item New stochastic scalability study and evaluated plans at larger sizes (Section 6.3, Appendix 8.13).
+\item Horizon extrapolation of the learned model checked on labelled plans (Section 6.4).
+\item Deployment recommendations rewritten (Section 7.3).
+\end{itemize}
+
+\begin{cmt}{}{}
+The physical and empirical basis of the RUL degradation and recovery parameters should be clarified. In the planning formulation, RUL decreases with flight assignments, whereas the evaluation heuristic introduces a component- and flight-dependent consumption term $c_{e,f}$. Please explain how $c_{e,f}$ and $RUL_{recover}$ are determined and clarify which critical systems/components are represented in the experiments.
+\end{cmt}
+
+\response We thank the reviewer. The monitored components are now defined in Section 2.3 as components whose failure grounds the aircraft (AOG), which motivates the hard RUL constraint and the cancellations in the evaluation. The RUL is counted in flight cycles. The consumption $c_{e,f}$ now also appears in constraint PdM.1, and it equals one cycle per flight in all experiments, so that planning and evaluation consume the RUL in the same way. For a component whose life is limited in flight hours, $c_{e,f}$ would be the block time of the flight. Section 5.3 states that the five components are generic and synthetic, since no health monitoring data were available for this study. Every prognostic task restores 10 flight cycles, and a reactive task the same amount. This value is a modelling choice and represents a restoring intervention, such as a repair or servicing, rather than a replacement.
+
+\changes
+\begin{itemize}[nosep]
+\item Monitored components defined as AOG-relevant (Section 2.3).
+\item $c_{e,f}$ added to PdM.1 and its value stated (Section 4.2.3, Section 6.1.1).
+\item Generic components and $\mathrm{RUL\_recover} = 10$ flight cycles stated as modelling choices (Section 5.3).
+\end{itemize}
+
+\begin{cmt}{}{}
+The evaluation-stage heuristic is used both to generate the NN training targets and to assess the final optimisation solutions, but it represents operational recovery mainly through flight cancellations and reactive maintenance and excludes actions such as aircraft swapping, crew reassignment, and broader network recovery. Please discuss how this simplified evaluation policy may affect the relative performance of the stochastic approaches and qualify the corresponding real-world performance claims, particularly because the component health and RUL scenarios are synthetically generated.
+\end{cmt}
+
+\response We agree. The evaluation heuristic generates the training labels of the learned recourse model and evaluates the plans, so the model learns the cost structure of this specific evaluator (Section 7.6). Richer recovery options such as aircraft swaps, crew reassignment or network recovery would reduce the cost of RUL violations. The absolute gains of the stochastic approaches are therefore likely smaller in practice, and we removed the claim that the simplified policy does not alter the ranking.
+
+To show how far the ranking depends on the assumptions, the final plans were re-evaluated under six other uncertainty structures and re-priced with other cost weights (Appendices 8.7 and 8.12). The learned and the engineered model remain cheaper than both deterministic models in every uncertainty case. The order between the learned and the engineered model depends on the case and on the cancellation weight. We also revised the comparison with the real-world baseline, which this bias affects most (see our response to Comment 2.4), and qualified the claims in Section 7.1 and the Conclusion. An evaluation with a richer recovery policy is listed as future work (Section 7.7).
+
+\changes
+\begin{itemize}[nosep]
+\item Effect of the simplified recovery policy on the learned model and on the gains discussed (Section 7.6).
+\item Robustness to uncertainty structures and cost weights (Appendices 8.7 and 8.12).
+\item Real-world claims qualified (Section 7.1, Conclusion), richer recovery as future work (Section 7.7).
+\end{itemize}
+
+\begin{cmt}{}{}
+The reported ranking of the optimisation strategies depends on several economic parameters, including cancellation penalties, planned and reactive maintenance costs, maintenance-slot costs, and outstation disruption costs. However, the numerical values and empirical basis of several key coefficients are not sufficiently transparent. Please report the main cost parameters and their sources and assess whether the principal conclusions, particularly the superiority of S-EX-95, remain robust under reasonable variations in these assumptions.
+\end{cmt}
+
+\response We thank the reviewer for this comment. Section 6.1.1 referred to a parameter table that was missing, and we apologise for this. All cost parameters are now listed in Table 11 (Appendix 8.4), with their values and where they enter. These values are relative weights set by us to reflect the priorities between flight cancellations, maintenance slots and early maintenance, and they are only loosely calibrated to airline cost data. For the cancellation weight, we give the EUROCONTROL Standard Inputs (2024) for orientation.
+
+Since only the ratios between the weights affect the plans, we re-priced the final plans of all joint models with one weight changed at a time (Appendix 8.12). The S-EX-95 model of the submitted version was replaced (see our response to Comment 3.2), so the analysis refers to the proposed model S-EX-LRN. The reactive, slot and outstation weights leave S-EX-LRN the cheapest model and change its differences to the engineered term and the tuned buffer by less than one percentage point, while its difference to deterministic planning moves by up to 3.1 points. The cancellation weight changes the ranking. The engineered term is cheapest at twice and four times the weight, and deterministic planning at a quarter of it. The plans were not re-optimised for the changed weights, so the analysis shows how robust the given plans are to a misspecified cost ratio. While compiling the table, we also found that the description of the unused-interval penalty did not match the implementation, and Eq. 5 and the new Eq. 6 (Section 4.2.2) now describe it as implemented.
+
+\changes
+\begin{itemize}[nosep]
+\item New cost parameter table with values and sources (Table 10, Appendix 8.4).
+\item Cost-weight sensitivity on the final plans (Appendix 8.12, Tables 20 and 21).
+\item Unused-interval penalty described as implemented (Section 4.2.2, Eqs. 5 and 6).
+\item Limitation "Approximate cost weights" (Section 7.6).
+\end{itemize}
+
+\begin{cmt}{}{}
+The sample-efficiency conclusion in Appendix 8.4 should be interpreted more cautiously. Because the 70/10/10/10 split is applied separately at each dataset size, the smaller training-set experiments are evaluated using very small and different hold-out sets. The apparent performance transition around 140 training instances may therefore partly reflect evaluation-sample variability. Please consider using a common fixed evaluation set across training sizes, preferably with repeated subsampling, or moderate the corresponding sample-efficiency claim.
+\end{cmt}
+
+\response We thank the reviewer for this suggestion, which we followed. The learning curve of the new learned recourse model now uses one fixed evaluation set, the test split, for every training size from 100 to 3{'}500 instances (Appendix 8.5). At 100, 200 and 400 instances, three random subsamples were drawn. The rank accuracy is already 0.932 at 100 instances and reaches 0.935 from 400 instances onwards, and the three draws at each size differ by at most 0.001. The curve shows no threshold, and we removed the statement on a transition around 140 training instances. Section 7.5 reads the curve as a trend and states its limitations, in particular that the MILP was not solved with the smaller models.
+
+\changes
+\begin{itemize}[nosep]
+\item Learning curve on one fixed evaluation set with repeated subsampling (Appendix 8.5, Table 12).
+\item Claim of a transition at 140 training instances removed, curve read as a trend with its limitations (Section 7.5).
+\end{itemize}
+
+
+
+\newpage
+\section{Response to Reviewer 4}
+
+We thank Reviewer 4 for the clear and helpful comments. They led to a heteroscedastic uncertainty model, a robustness analysis and a consistent use of PdM.
+
+\begin{cmt}{}{}
+First, the treatment of RUL prognostic uncertainty is overly simplistic. The manuscript assumes that RUL predictions follow independent Gaussian distributions with constant standard deviations. This assumption is difficult to justify for complex degrading systems, where prognostic uncertainty is generally time-dependent and may exhibit non-Gaussian, heteroscedastic, and temporally correlated characteristics. In particular, the predictive variance should ideally evolve with the degradation state and prediction horizon rather than remain constant. As a result, the current uncertainty model substantially limits the reliability of the subsequent maintenance optimization. More importantly, compared with recent RUL prognostic methods developed and validated on the C-MAPSS benchmark, many state-of-the-art approaches explicitly model heteroscedastic or distributional uncertainty and therefore provide considerably richer prognostic information than the approach adopted here. Consequently, the RUL prediction component, which provides the key input to the proposed optimization framework, appears relatively underdeveloped. The authors should provide a stronger justification for the adopted uncertainty assumption and, preferably, evaluate the framework using more advanced probabilistic RUL models or conduct sensitivity analyses to demonstrate the robustness of the optimization results to different uncertainty structures.
+\end{cmt}
+
+\response We thank the reviewer and agree that a constant standard deviation is hard to justify. We also have to correct the description of the submitted version. Its text stated independent Gaussian errors, whereas the implementation drew the errors uniformly from the integers between \textminus{}5 and 5 flight cycles, so the spread was constant in both cases. The text and the code now use the same model (see also our response to Comment 2.1 of Reviewer 2). We made three changes.
+
+First, the uncertainty model is now heteroscedastic, with a standard deviation that grows with the predicted RUL (Section 5.3). This follows the prognostic accuracy cone and matches deep-learning predictors on C-MAPSS and N-CMAPSS, whose error and spread decrease towards the end of life. A Gaussian with an input-dependent variance is also the standard output of RUL models with a heteroscedastic likelihood.
+
+Second, the Introduction and Section 3.2 now review probabilistic RUL methods, including Bayesian and heteroscedastic networks, ensembles and conformal prediction, and their open issues (see also our response to Comment 5.2).
+
+Third, we assessed the robustness of the optimisation results to other uncertainty structures (Appendix 8.7). These include heavy-tailed, skewed and correlated errors, a biased predictor and a less accurate predictor with a spread about 1.6 times wider, at the level of a convolutional network on C-MAPSS. The plans were made under the heteroscedastic Gaussian model and evaluated under each of these structures. The learned and the engineered model remain cheaper than both deterministic models in every case, and the learned model costs 3.7 to 5.5\% less than the tuned buffer. The order of the learned and the engineered model depends on the case.
+
+We agree that a probabilistic RUL model trained on C-MAPSS or N-CMAPSS would be the strongest test. Since the framework only requires a set of RUL scenarios per component, such a model can replace the sampler without changes to the optimisation. This evaluation was beyond the scope of this revision. Section 7.7 names it as the first step of future work, followed by prognostic models trained on the health monitoring data of the SWISS fleet.
+
+\changes
+\begin{itemize}[nosep]
+\item Description of the uncertainty model corrected, heteroscedastic Gaussian model with its justification (Section 5.3).
+\item Review of probabilistic RUL methods and their open issues (Section 1, Section 3.2).
+\item Robustness analysis under six uncertainty structures, including a less accurate predictor at C-MAPSS CNN level (Section 7.4, Appendix 8.7).
+\item Evaluation with a probabilistic RUL model on N-CMAPSS named as future work (Section 7.7).
+\end{itemize}
+
+\begin{cmt}{}{}
+Second, the manuscript appears to use condition-based maintenance (CBM) and PdM interchangeably. These concepts are related but should not be treated as synonymous. CBM generally determines maintenance actions based on the observed or estimated current condition of an asset, whereas PdM typically uses prognostic information, such as predicted degradation trajectories or RUL, to anticipate future failures and optimize maintenance timing. Since the proposed framework explicitly relies on RUL predictions, the authors should clearly define the maintenance paradigm being considered and consistently distinguish CBM from PdM throughout the manuscript. The roles of condition monitoring, prognostics, and maintenance decision-making should also be clarified.
+\end{cmt}
+
+\response We agree and thank the reviewer for this clarification. The Introduction now defines both terms (Section 1). CBM is a policy that uses information about the health condition of a system to choose maintenance interventions. It comprises condition monitoring, diagnostics and prognostics, and maintenance decision-making. PdM is the part of CBM that uses RUL predictions to schedule maintenance before failure. Since the framework addresses the decision-making step and takes a probabilistic RUL prediction as given, the manuscript now uses PdM throughout, including the keywords, the contributions and the RUL constraint PdM.1.
+
+\changes
+\begin{itemize}[nosep]
+\item CBM and PdM defined, with the roles of condition monitoring, prognostics and decision-making (Section 1).
+\item PdM used consistently throughout, including keywords, contributions and Section 3.2.
+\end{itemize}
+
+\begin{cmt}{}{}
+The manuscript formatting does not match the requirements of Reliability Engineering \& System Safety. For example, the table of contents should be removed.
+\end{cmt}
+
+\response We thank the reviewer. We removed the table of contents and checked the manuscript against the Guide for Authors of Reliability Engineering \& System Safety.
+
+\changes
+\begin{itemize}[nosep]
+\item Table of contents removed, formatting checked against the Guide for Authors.
+\end{itemize}
+
+
+
+\newpage
+\section{Response to Reviewer 5}
+
+We thank Reviewer 5 for the comments, which helped us to sharpen the topic, the motivation and the contributions of the paper.
+
+\begin{cmt}{}{}
+There are too many keywords on the first page; the authors should refine them to better highlight the topic of the proposed method;
+\end{cmt}
+
+\response We thank the reviewer and reduced the keywords from ten to six: Predictive Maintenance, Remaining Useful Life, Tail Assignment, Maintenance Scheduling, Stochastic Programming and Learned Recourse.
+
+\changes
+\begin{itemize}[nosep]
+\item Keywords reduced from ten to six.
+\end{itemize}
+
+\begin{cmt}{}{}
+The literature review is insufficient. The key issues of existing methods for modeling uncertainty in RUL predictions are not clearly stated in the Introduction part;
+\end{cmt}
+
+\response We agree and added a paragraph on the modelling of RUL uncertainty to the Introduction (Section 1). It covers statistical degradation models, Bayesian filtering and hybrid approaches, and machine-learning methods such as Gaussian processes, heteroscedastic and Bayesian neural networks, ensembles, quantile regression and conformal prediction. It then names three open issues. The reported uncertainty is often miscalibrated, the dependence between components is rarely modelled, and it is largely open how uncertainty estimates should enter operational planning. This paper addresses the third issue. Section 3.2 was extended accordingly.
+
+\changes
+\begin{itemize}[nosep]
+\item New paragraph on RUL uncertainty modelling and its open issues (Section 1).
+\item Section 3.2 extended with the corresponding literature.
+\end{itemize}
+
+\begin{cmt}{}{}
+The motivation and innovation of the proposed method for Airline Reliability should be further emphasized in the Introduction part;
+\end{cmt}
+
+\response We thank the reviewer and revised the Introduction to emphasise the motivation and the innovation (Section 1). It now explains why sequential planning cannot use prognostic information well and why the RUL uncertainty matters for reliability, as an overestimated RUL leads to failures before the planned task, reactive maintenance and flight cancellations. It then states the gap and the contributions, as described in our response to Comment 1.1 of Reviewer 1.
+
+\changes
+\begin{itemize}[nosep]
+\item Motivation, gap and contributions rewritten (Section 1).
+\end{itemize}
+
+\begin{cmt}{}{}
+The contributions of the proposed method should be further highlighted. The current version looks like a summary of case study;
+\end{cmt}
+
+\response We agree and rewrote the contribution list as methodological contributions (Section 1). These are the joint formulation under RUL uncertainty, the learned recourse model that is convex in the plan and embedded as a linear program, and the link of the two stages of sequential planning. The case study is now the fourth contribution and is summarised in one sentence. The Conclusion follows the same structure.
+
+\changes
+\begin{itemize}[nosep]
+\item Contribution list rewritten as method contributions (Section 1), Conclusion aligned (Section 8).
+\end{itemize}
+
+\begin{cmt}{}{}
+More state-of-the-art methods should be compared to highlight the superiority of the proposed method;
+\end{cmt}
+
+\response We thank the reviewer for this suggestion. To our knowledge, no other method solves the joint problem of tail assignment, maintenance scheduling and predictive maintenance under RUL uncertainty (Section 3.4, Table 1), so a direct comparison with a published method is not possible. We therefore compare the proposed model with the established alternatives that apply to this problem (Sections 4.4 and 6.2). These are deterministic planning on the expected RUL, planning on a conservative RUL quantile with a tuned buffer, which includes the common 95\% lower bound as a special case, and a scenario-based expected-cost term built by hand with knowledge of the evaluation rules. A neural variant of the learned model, two sequential formulations and the airline's own plans are also included. Writing the recovery for every scenario explicitly into the MILP, as in sample average approximation, would multiply its size by the number of scenarios and require the recovery policy in closed form (Section 4.1).
+
+\changes
+\begin{itemize}[nosep]
+\item Positioning against existing methods (Section 3.4, Table 1).
+\item Comparison with a tuned RUL buffer, an engineered recourse term, a neural variant, two sequential formulations and the real-world baseline (Sections 5.5 and 6.2).
+\item Reason why an explicit scenario formulation is not used (Section 4.1).
+\end{itemize}
+
+\begin{cmt}{}{}
+Different types of neural networks should be used in the proposed method and compared.
+\end{cmt}
+
+\response We agree and compared three model types inside the MILP (Appendix 8.2). The part of a recourse model that enters the MILP must be representable with linear constraints, which limits the network types that can be used. The proposed model combines max-affine functions with an ordered weighted average and is embedded as a linear program. The neural variant is a partially input-convex network whose weights are produced by a context network from inputs that the plan cannot change, and it is also embedded as a linear program. A generic ReLU network needs binary variables. During development, it ordered plans well offline, but the MILP found plans for which it predicted a much lower recourse cost than the simulator. This led to the convex and monotone form of the final models. The proposed model reaches a rank accuracy of 0.935 on the test split and the neural variant 0.908. On the final plans, the proposed model costs 0.68\% less than the neural variant and is also cheaper in every robustness case (Appendix 8.7). The neural variant is more flexible, and it is exploited by the optimiser, as it under-predicts its own plans by 11.7\% while it over-predicts the plans of the other models (Appendix 8.3, see our response to Comment 3.2). In this comparison, the simpler max-affine structure of the proposed model was the more robust one.
+
+\changes
+\begin{itemize}[nosep]
+\item Three model types inside the MILP compared (Appendix 8.2, Section 4.3).
+\item Neural variant S-EX-NN in the main comparison (Section 6.2, Appendix 8.8).
+\end{itemize}
+
+\end{document}
